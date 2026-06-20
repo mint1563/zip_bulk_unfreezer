@@ -1,2 +1,2 @@
 cargo build --release
-cargo run
+cargo run --release

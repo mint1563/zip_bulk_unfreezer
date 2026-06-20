@@ -2,7 +2,7 @@ use encoding_rs::SHIFT_JIS;
 use std::fs::{self, File};
 use std::io;
 use std::path::Path;
-use zip::ZipArchive; // 文字コード変換用にインポート
+use zip::ZipArchive;
 
 fn main() -> io::Result<()> {
     let scan_dir = Path::new("./zip");
@@ -19,13 +19,22 @@ fn main() -> io::Result<()> {
         let path = entry.path();
 
         if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("zip") {
+            let zip_name = path.file_stem().unwrap();
+            let target_output_dir = output_dir.join(zip_name);
+
+            // 【追加】すでに展開先フォルダが存在する場合はスキップ
+            if target_output_dir.exists() {
+                println!(
+                    "スキップ: すでに展開済みです -> {:?}",
+                    path.file_name().unwrap()
+                );
+                continue;
+            }
+
             println!(
                 "\n--- ZIPファイルを発見: {:?} ---",
                 path.file_name().unwrap()
             );
-
-            let zip_name = path.file_stem().unwrap();
-            let target_output_dir = output_dir.join(zip_name);
 
             if let Err(e) = extract_zip_and_nested(&path, &target_output_dir) {
                 eprintln!(
@@ -73,9 +82,15 @@ fn extract_zip_and_nested(zip_path: &Path, output_dir: &Path) -> io::Result<()> 
             io::copy(&mut file, &mut outfile)?;
 
             if outpath.extension().and_then(|s| s.to_str()) == Some("zip") {
-                println!("  └─ ネストされたZIPを展開します: {}", sanitized_name);
-
                 let nested_output_dir = outpath.with_extension("");
+
+                // 【追加】ネストされたZIPも展開先があればスキップ
+                if nested_output_dir.exists() {
+                    println!("  └─ スキップ（ネストZIP展開済み）: {}", sanitized_name);
+                    continue;
+                }
+
+                println!("  └─ ネストされたZIPを展開します: {}", sanitized_name);
                 fs::create_dir_all(&nested_output_dir)?;
 
                 if let Err(e) = extract_zip_and_nested(&outpath, &nested_output_dir) {
@@ -94,10 +109,9 @@ fn decode_filename(raw_bytes: &[u8]) -> String {
         return utf8_str.to_string();
     }
 
-    // 型推論エラー(E0282)対策として、明確に型をStringに指定して変換します
     let (res, _, has_errors) = SHIFT_JIS.decode(raw_bytes);
     if !has_errors {
-        res.into_owned() // 自動的にStringに変換されるよう修正されました
+        res.into_owned()
     } else {
         String::from_utf8_lossy(raw_bytes).into_owned()
     }
