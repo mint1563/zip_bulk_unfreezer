@@ -6,6 +6,8 @@ zipファイルを自動で展開するプログラムです
 
 使い方
 
+## windows
+
 ```bash
-run.bat
+cargo run
 ```
