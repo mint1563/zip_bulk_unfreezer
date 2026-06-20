@@ -1,11 +1,11 @@
 use std::fs::{self, File};
-use std::io::{self, ioctl};
-use std::path::{Path, PathBuf};
+use std::io;
+use std::path::Path;
 use zip::ZipArchive;
 
 fn main() -> io::Result<()> {
     // ZIPファイルを探す対象のフォルダ（今回はカレントディレクトリ）
-    let scan_dir = Path::new(".");
+    let scan_dir = Path::new("./zip");
     // 解凍先のフォルダ
     let output_dir = Path::new("unfreeze");
 
@@ -77,7 +77,7 @@ fn extract_zip_and_nested(zip_path: &Path, output_dir: &Path) -> io::Result<()> 
 
             // ファイルの書き出し
             let mut outfile = File::create(&outpath)?;
-            std::io::copy(&mut file, &mut outfile)?;
+            io::copy(&mut file, &mut outfile)?;
 
             // 解凍されたファイルがさらにZIPだった場合（ネスト対応）
             if outpath.extension().and_then(|s| s.to_str()) == Some("zip") {
