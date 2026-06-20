@@ -7,5 +7,5 @@ zipファイルを自動で展開するプログラムです
 使い方
 
 ```bash
-cargo run
+run.bat
 ```
